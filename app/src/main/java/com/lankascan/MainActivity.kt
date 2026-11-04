@@ -2,17 +2,7 @@ package com.lankascan
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.runtime.*
-import com.lankascan.ui.NavGraph
-@Composable
-fun LankaTheme(content: @Composable ()->Unit){
-    MaterialTheme(colorScheme = darkColorScheme(), content = content)
-}
-class MainActivity: ComponentActivity(){
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { LankaTheme { NavGraph() } }
-    }
-}
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+@Composable fun LankaTheme(c: @Composable ()->Unit){ MaterialTheme(colorScheme = darkColorScheme(), content=c) }
+class MainActivity: ComponentActivity(){ override fun onCreate(s: Bundle?){ super.onCreate(s); setContent{ LankaTheme{ com.lankascan.ui.NavGraph() } } } }

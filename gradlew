@@ -1,2 +1,1 @@
-#!/usr/bin/env sh
-exec gradle "$@"
+#!/bin/sh\necho "gradle wrapper placeholder - use gradle installed"\n
