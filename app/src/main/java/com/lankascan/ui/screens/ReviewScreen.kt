@@ -1,7 +1,7 @@
 package com.lankascan.ui.screens
-import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,11 +24,7 @@ import com.lankascan.util.ImageProcessor
 @Composable fun ReviewScreen(onCreatePdf:()->Unit, onBack:()->Unit){
  var selectedIdx by remember { mutableStateOf(0) }
  var currentBitmap by remember { mutableStateOf(ScanSession.pages.firstOrNull()) }
-
- LaunchedEffect(selectedIdx){
-  currentBitmap = ScanSession.pages.getOrNull(selectedIdx)
- }
-
+ LaunchedEffect(selectedIdx){ currentBitmap = ScanSession.pages.getOrNull(selectedIdx) }
  Column(Modifier.fillMaxSize().background(Color(0xFF0F1115)).padding(16.dp)){
   Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically){
    TextButton(onClick=onBack){ Text("Back") }
@@ -42,12 +38,13 @@ import com.lankascan.util.ImageProcessor
   Spacer(Modifier.height(12.dp))
   LazyRow(horizontalArrangement=Arrangement.spacedBy(10.dp)){
    itemsIndexed(ScanSession.pages){ idx, bmp ->
-    Card(Modifier.size(80.dp).background(if(idx==selectedIdx) Color(0xFF3B82F6) else Color.Transparent, RoundedCornerShape(12.dp)), shape=RoundedCornerShape(12.dp), onClick={ selectedIdx=idx }){
+    val borderColor = if(idx==selectedIdx) Color(0xFF3B82F6) else Color.Transparent
+    Card(Modifier.size(80.dp).background(borderColor, RoundedCornerShape(12.dp)).clickable{ selectedIdx=idx }, shape=RoundedCornerShape(12.dp)){
      Image(bitmap=bmp.asImageBitmap(), contentDescription=null, modifier=Modifier.fillMaxSize())
     }
    }
    item{
-    Card(Modifier.size(80.dp), colors=CardDefaults.cardColors(containerColor=Color(0xFF1E242E)), onClick={}){
+    Card(Modifier.size(80.dp), colors=CardDefaults.cardColors(containerColor=Color(0xFF1E242E))){
      Box(Modifier.fillMaxSize(), contentAlignment=Alignment.Center){ Icon(Icons.Default.Add, null, tint=Color(0xFF3B82F6)) }
     }
    }

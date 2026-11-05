@@ -1,6 +1,7 @@
 package com.lankascan.ui.screens
 import android.os.Environment
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable fun HomeScreen(onScan:()->Unit, onOpenPdf:(File)->Unit){
  val docDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "LankaScan")
  val files = remember { mutableStateOf(emptyList<File>()) }
@@ -38,11 +40,11 @@ import java.io.File
   } else {
    LazyColumn(modifier=Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(10.dp)){
     items(files.value){ file ->
-     Card(shape=RoundedCornerShape(16.dp), colors=CardDefaults.cardColors(containerColor=Color(0xFF1E242E)), onClick={ onOpenPdf(file) }){
+     Card(shape=RoundedCornerShape(16.dp), colors=CardDefaults.cardColors(containerColor=Color(0xFF1E242E)), modifier=Modifier.fillMaxWidth().clickable{ onOpenPdf(file) }){
       Row(Modifier.padding(14.dp), verticalAlignment=Alignment.CenterVertically){
        Icon(Icons.Default.Description, null, tint=Color(0xFF3B82F6), modifier=Modifier.size(40.dp))
        Spacer(Modifier.width(12.dp))
-       Column{ Text(file.nameWithoutExtension, color=Color.White); Text("${file.length()/1024} kB • ${java.text.SimpleDateFormat("MMM dd, yyyy").format(java.util.Date(file.lastModified()))}", color=Color.Gray, style=MaterialTheme.typography.bodySmall) }
+       Column{ Text(file.nameWithoutExtension, color=Color.White); Text("${file.length()/1024} kB", color=Color.Gray, style=MaterialTheme.typography.bodySmall) }
       }
      }
     }
