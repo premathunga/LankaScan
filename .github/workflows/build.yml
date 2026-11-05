@@ -28,6 +28,9 @@ jobs:
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Keystore prepared"
+          else
+            echo "No KEYSTORE_BASE64 secret found - debug build only"
           fi
 
       - name: Build debug APK
@@ -50,9 +53,15 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
         run: |
           set -o pipefail
-          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-release.log || echo "Release skipped"
+          if [ -n "$KEYSTORE_FILE" ]; then
+            gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-release.log
+          else
+            echo "Skipping signed release - no keystore"
+            echo "Skipping signed release - no keystore" > build-release.log
+          fi
 
       - name: Upload build logs
         if: always()
