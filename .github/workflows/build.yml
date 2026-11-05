@@ -2,7 +2,6 @@ name: Build LankaScan APK
 on:
   push:
     branches: [ main, master ]
-  pull_request:
   workflow_dispatch:
 jobs:
   build:
@@ -16,37 +15,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Prepare release keystore (optional)
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-            echo "Keystore prepared"
-          else
-            echo "No KEYSTORE_BASE64 secret found - debug build only"
-          fi
-      - name: Build debug APK
-        run: |
-          set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-debug.log
-      - name: Show compile errors
-        if: failure()
-        run: |
-          echo "=== Kotlin / resource errors ==="
-          grep -nE "^e: |error:|What went wrong" -A3 build-debug.log | head -200
-          echo "=== Last 100 lines ==="
-          tail -120 build-debug.log
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: build-*.log
-      - name: Upload debug APK
+      - name: Build Debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+      - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: LankaScan-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+      - name: Upload Log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log

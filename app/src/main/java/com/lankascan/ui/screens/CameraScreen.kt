@@ -1,4 +1,12 @@
 package com.lankascan.ui.screens
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -6,24 +14,55 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-@Composable fun CameraScreen(onCaptured:()->Unit, onClose:()->Unit){
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import java.io.File
+
+@Composable fun CameraScreen(onCaptured:(Bitmap)->Unit, onClose:()->Unit){
+ val context = LocalContext.current
+ val lifecycleOwner = LocalLifecycleOwner.current
+ val previewView = remember { PreviewView(context) }
+ var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+
+ LaunchedEffect(Unit){
+  val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+  cameraProviderFuture.addListener({
+   val provider = cameraProviderFuture.get()
+   val preview = Preview.Builder().build().also{ it.setSurfaceProvider(previewView.surfaceProvider) }
+   val capture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
+   imageCapture = capture
+   try{ provider.unbindAll(); provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture) }catch(e:Exception){}
+  }, ContextCompat.getMainExecutor(context))
+ }
+
  Box(Modifier.fillMaxSize().background(Color.Black)){
+  AndroidView(factory={ previewView }, modifier=Modifier.fillMaxSize())
+
+  // Scanner frame
   Box(Modifier.fillMaxSize()){
-   Box(Modifier.align(Alignment.Center).fillMaxWidth(0.9f).fillMaxHeight(0.7f).border(2.dp, Color.White, RoundedCornerShape(24.dp)))
-   Text("Place the document inside the frame", color=Color.White, modifier=Modifier.align(Alignment.TopCenter).padding(top=80.dp).background(Color(0x88000000), RoundedCornerShape(16.dp)).padding(horizontal=16.dp, vertical=6.dp))
+   Box(Modifier.align(Alignment.Center).fillMaxWidth(0.85f).fillMaxHeight(0.65f).border(2.dp, Color(0xFF3B82F6), RoundedCornerShape(20.dp)))
+   Text("Place document inside frame", color=Color.White, modifier=Modifier.align(Alignment.TopCenter).padding(top=60.dp).background(Color(0xAA000000), RoundedCornerShape(20.dp)).padding(horizontal=18.dp, vertical=8.dp))
   }
-  IconButton(onClick=onClose, modifier=Modifier.align(Alignment.TopStart).padding(8.dp)){ Icon(Icons.Default.Close, null, tint=Color.White) }
-  Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(32.dp), Arrangement.SpaceBetween, Alignment.CenterVertically){
-   IconButton(onClick={}){ Icon(Icons.Default.PhotoLibrary, null, tint=Color.White, modifier=Modifier.size(32.dp)) }
-   Button(onClick=onCaptured, modifier=Modifier.size(80.dp), shape=CircleShape, colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF3B82F6))){}
-   Spacer(Modifier.size(32.dp))
+
+  IconButton(onClick=onClose, modifier=Modifier.align(Alignment.TopStart).padding(12.dp).background(Color(0x66000000), CircleShape)){ Icon(Icons.Default.Close, null, tint=Color.White) }
+
+  Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(32.dp), horizontalArrangement=Arrangement.Center){
+   Button(onClick={
+    val file = File.createTempFile("scan_", ".jpg", context.cacheDir)
+    val opts = ImageCapture.OutputFileOptions.Builder(file).build()
+    imageCapture?.takePicture(opts, ContextCompat.getMainExecutor(context), object: ImageCapture.OnImageSavedCallback{
+     override fun onImageSaved(o: ImageCapture.OutputFileResults){ val bmp = BitmapFactory.decodeFile(file.absolutePath); onCaptured(bmp) }
+     override fun onError(e: ImageCaptureException){}
+    })
+   }, modifier=Modifier.size(80.dp), shape=CircleShape, colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF3B82F6))){}
   }
  }
 }
