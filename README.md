@@ -1,1 +1,1 @@
-# LankaScan - Open Source Scanner\nNo Ads, 100% Offline.\n\nGitHub Actions workflow is in .github/workflows/build.yml
+# LankaScan - FIXED BUILD\nAll plugin errors fixed. Use this zip to replace repo.
