@@ -22,10 +22,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.4
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
-      - name: Build Debug APK (No wrapper needed)
-        run: gradle assembleDebug --stacktrace --no-daemon
+      - name: Generate Gradle Wrapper if missing
+        run: |
+          if [ ! -f "gradlew" ]; then
+            echo "gradlew not found, generating..."
+            gradle wrapper --gradle-version 8.4
+            chmod +x gradlew
+          fi
+          ls -la
+          cat app/build.gradle.kts || cat app/build.gradle
+
+      - name: Build Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --info --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
