@@ -11,8 +11,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.io.File
-
 @Composable fun CameraScreen(onCaptured:(Bitmap)->Unit, onClose:()->Unit){
  val context=LocalContext.current
  val lifecycleOwner=LocalLifecycleOwner.current
@@ -35,19 +32,18 @@ import java.io.File
   future.addListener({
    val provider=future.get()
    val preview=Preview.Builder().build().also{it.setSurfaceProvider(previewView.surfaceProvider)}
-   val capture=ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
+   val capture=ImageCapture.Builder().build()
    imageCapture=capture
    try{provider.unbindAll(); provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)}catch(_:Exception){}
   }, ContextCompat.getMainExecutor(context))
  }
  Box(Modifier.fillMaxSize().background(Color.Black)){
   AndroidView(factory={previewView}, modifier=Modifier.fillMaxSize())
-  // Custom Scanner Frame - OFFLINE UI like your screenshots
   Box(Modifier.fillMaxSize()){
    Box(Modifier.align(Alignment.Center).fillMaxWidth(0.85f).fillMaxHeight(0.65f).border(2.dp, Color.White, RoundedCornerShape(20.dp)))
-   Text("Place document inside frame • OFFLINE", color=Color.White, modifier=Modifier.align(Alignment.TopCenter).padding(top=60.dp).background(Color(0xAA000000), RoundedCornerShape(20.dp)).padding(horizontal=18.dp, vertical=8.dp))
+   Text("OFFLINE SCANNER", color=Color.White, modifier=Modifier.align(Alignment.TopCenter).padding(top=60.dp).background(Color(0xAA000000), RoundedCornerShape(20.dp)).padding(horizontal=18.dp, vertical=8.dp))
   }
-  IconButton(onClick=onClose, modifier=Modifier.align(Alignment.TopStart).padding(12.dp).background(Color(0x66000000), CircleShape)){Icon(Icons.Default.Close, null, tint=Color.White)}
+  TextButton(onClick=onClose, modifier=Modifier.align(Alignment.TopStart).padding(12.dp)){Text("Close", color=Color.White)}
   Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(32.dp), horizontalArrangement=Arrangement.Center){
    Button(onClick={
     val file=File.createTempFile("scan_", ".jpg", context.cacheDir)
