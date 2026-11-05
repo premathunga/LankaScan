@@ -3,7 +3,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -27,42 +26,37 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 @Composable fun CameraScreen(onCaptured:(Bitmap)->Unit, onClose:()->Unit){
- val context = LocalContext.current
- val lifecycleOwner = LocalLifecycleOwner.current
- val previewView = remember { PreviewView(context) }
- var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
-
+ val context=LocalContext.current
+ val lifecycleOwner=LocalLifecycleOwner.current
+ val previewView=remember{PreviewView(context)}
+ var imageCapture by remember{mutableStateOf<ImageCapture?>(null)}
  LaunchedEffect(Unit){
-  val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-  cameraProviderFuture.addListener({
-   val provider = cameraProviderFuture.get()
-   val preview = Preview.Builder().build().also{ it.setSurfaceProvider(previewView.surfaceProvider) }
-   val capture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
-   imageCapture = capture
-   try{ provider.unbindAll(); provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture) }catch(e:Exception){}
+  val future=ProcessCameraProvider.getInstance(context)
+  future.addListener({
+   val provider=future.get()
+   val preview=Preview.Builder().build().also{it.setSurfaceProvider(previewView.surfaceProvider)}
+   val capture=ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
+   imageCapture=capture
+   try{provider.unbindAll(); provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)}catch(_:Exception){}
   }, ContextCompat.getMainExecutor(context))
  }
-
  Box(Modifier.fillMaxSize().background(Color.Black)){
-  AndroidView(factory={ previewView }, modifier=Modifier.fillMaxSize())
-
-  // Scanner frame
+  AndroidView(factory={previewView}, modifier=Modifier.fillMaxSize())
+  // Custom Scanner Frame - OFFLINE UI like your screenshots
   Box(Modifier.fillMaxSize()){
-   Box(Modifier.align(Alignment.Center).fillMaxWidth(0.85f).fillMaxHeight(0.65f).border(2.dp, Color(0xFF3B82F6), RoundedCornerShape(20.dp)))
-   Text("Place document inside frame", color=Color.White, modifier=Modifier.align(Alignment.TopCenter).padding(top=60.dp).background(Color(0xAA000000), RoundedCornerShape(20.dp)).padding(horizontal=18.dp, vertical=8.dp))
+   Box(Modifier.align(Alignment.Center).fillMaxWidth(0.85f).fillMaxHeight(0.65f).border(2.dp, Color.White, RoundedCornerShape(20.dp)))
+   Text("Place document inside frame • OFFLINE", color=Color.White, modifier=Modifier.align(Alignment.TopCenter).padding(top=60.dp).background(Color(0xAA000000), RoundedCornerShape(20.dp)).padding(horizontal=18.dp, vertical=8.dp))
   }
-
-  IconButton(onClick=onClose, modifier=Modifier.align(Alignment.TopStart).padding(12.dp).background(Color(0x66000000), CircleShape)){ Icon(Icons.Default.Close, null, tint=Color.White) }
-
+  IconButton(onClick=onClose, modifier=Modifier.align(Alignment.TopStart).padding(12.dp).background(Color(0x66000000), CircleShape)){Icon(Icons.Default.Close, null, tint=Color.White)}
   Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(32.dp), horizontalArrangement=Arrangement.Center){
    Button(onClick={
-    val file = File.createTempFile("scan_", ".jpg", context.cacheDir)
-    val opts = ImageCapture.OutputFileOptions.Builder(file).build()
+    val file=File.createTempFile("scan_", ".jpg", context.cacheDir)
+    val opts=ImageCapture.OutputFileOptions.Builder(file).build()
     imageCapture?.takePicture(opts, ContextCompat.getMainExecutor(context), object: ImageCapture.OnImageSavedCallback{
-     override fun onImageSaved(o: ImageCapture.OutputFileResults){ val bmp = BitmapFactory.decodeFile(file.absolutePath); onCaptured(bmp) }
-     override fun onError(e: ImageCaptureException){}
+     override fun onImageSaved(o: ImageCapture.OutputFileResults){ val bmp=BitmapFactory.decodeFile(file.absolutePath); onCaptured(bmp) }
+     override fun onError(e: androidx.camera.core.ImageCaptureException){}
     })
-   }, modifier=Modifier.size(80.dp), shape=CircleShape, colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF3B82F6))){}
+   }, modifier=Modifier.size(80.dp), shape=CircleShape, colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF4ADE80))){}
   }
  }
 }
