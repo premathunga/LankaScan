@@ -1,4 +1,4 @@
-name: Build LankaScan Offline Minimal
+name: Build LankaScan Pro Complete
 on: [push, workflow_dispatch]
 jobs:
   build:
@@ -9,12 +9,9 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
       - uses: gradle/actions/setup-gradle@v4
         with: {gradle-version: '8.9'}
-      - name: Build Debug
-        run: |
-          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
-          echo "=== ERRORS ==="; grep -n "e: file" build.log | head -100
+      - run: gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
       - uses: actions/upload-artifact@v4
-        with: {name: APK, path: app/build/outputs/apk/debug/*.apk}
+        with: {name: LankaScan-Pro-APK, path: app/build/outputs/apk/debug/*.apk}
       - if: failure()
         uses: actions/upload-artifact@v4
         with: {name: build-log, path: build.log}

@@ -34,8 +34,14 @@ import com.lankascan.util.ImageProcessor
    TextButton(onClick={current?.let{val f=ImageProcessor.applyFilter(it, EnhancementEngine.Filter.ENHANCE); ScanSession.replace(selectedIdx,f); current=f}}){Text("Enhance", color=Color.White)}
    TextButton(onClick={current?.let{val f=ImageProcessor.applyFilter(it, EnhancementEngine.Filter.NO_SHADOW); ScanSession.replace(selectedIdx,f); current=f}}){Text("NoShadow", color=Color.White)}
    TextButton(onClick={current?.let{val f=ImageProcessor.applyFilter(it, EnhancementEngine.Filter.BW); ScanSession.replace(selectedIdx,f); current=f}}){Text("B/W", color=Color.White)}
+   TextButton(onClick={ if(ScanSession.pages.size>1){ ScanSession.remove(selectedIdx); selectedIdx=0; current=ScanSession.pages.firstOrNull() } }){Text("Delete", color=Color.Red)}
   }
   Spacer(Modifier.height(12.dp))
-  Button(onClick=onCreatePdf, modifier=Modifier.fillMaxWidth().height(56.dp), shape=RoundedCornerShape(28.dp), colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF4ADE80), contentColor=Color.Black)){Text("Create A4 PDF")}
+  Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)){
+   Button(onClick={ if(selectedIdx>0){ ScanSession.move(selectedIdx, selectedIdx-1); selectedIdx-- } }, modifier=Modifier.weight(1f), colors=ButtonDefaults.buttonColors(containerColor=Color.DarkGray)){Text("Move Left")}
+   Button(onClick={ if(selectedIdx<ScanSession.pages.size-1){ ScanSession.move(selectedIdx, selectedIdx+1); selectedIdx++ } }, modifier=Modifier.weight(1f), colors=ButtonDefaults.buttonColors(containerColor=Color.DarkGray)){Text("Move Right")}
+  }
+  Spacer(Modifier.height(12.dp))
+  Button(onClick=onCreatePdf, modifier=Modifier.fillMaxWidth().height(56.dp), shape=RoundedCornerShape(28.dp), colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF4ADE80), contentColor=Color.Black)){Text("Create A4 PDF  •  ${ScanSession.pages.size} pages")}
  }
 }

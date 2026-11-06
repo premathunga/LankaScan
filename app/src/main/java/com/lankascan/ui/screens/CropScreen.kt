@@ -17,17 +17,16 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.lankascan.data.ScanSession
 import com.lankascan.engine.DocumentDetector
+import com.lankascan.engine.EnhancementEngine
 import com.lankascan.util.ImageProcessor
 import kotlin.math.roundToInt
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun CropScreen(onConfirm:(android.graphics.Bitmap)->Unit, onBack:()->Unit){
  val src=ScanSession.lastCaptured ?: return
  var viewSize by remember{mutableStateOf(Offset.Zero)}
  var points by remember{mutableStateOf(DocumentDetector.detectDocument(src).map{PointF(it.x*0.25f, it.y*0.25f)})}
  var preview by remember{mutableStateOf(src)}
- var filterMode by remember{mutableStateOf(com.lankascan.engine.EnhancementEngine.Filter.NO_SHADOW)}
-
+ var filterMode by remember{mutableStateOf(EnhancementEngine.Filter.NO_SHADOW)}
  Column(Modifier.fillMaxSize().background(Color(0xFF0F1115))){
   Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement=Arrangement.SpaceBetween){
    TextButton(onClick=onBack){Text("Back")}
@@ -48,13 +47,8 @@ import kotlin.math.roundToInt
   }
   Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement=Arrangement.spacedBy(6.dp)){
    listOf("ORIGINAL","LIGHTEN","ENHANCE","NO_SHADOW","BW").forEach{ name->
-    val f=com.lankascan.engine.EnhancementEngine.Filter.valueOf(name)
-    FilterChip(onClick={
-     filterMode=f
-     val scaled=points.map{PointF(it.x / viewSize.x * src.width, it.y / viewSize.y * src.height)}
-     val cropped=ImageProcessor.perspectiveCrop(src, scaled)
-     preview=ImageProcessor.applyFilter(cropped, f)
-    }, label={Text(name.take(6))}, selected=filterMode==f, modifier=Modifier.weight(1f))
+    val f=EnhancementEngine.Filter.valueOf(name)
+    FilterChip(onClick={ filterMode=f; val scaled=points.map{PointF(it.x / viewSize.x * src.width, it.y / viewSize.y * src.height)}; val cropped=ImageProcessor.perspectiveCrop(src, scaled); preview=ImageProcessor.applyFilter(cropped, f) }, label={Text(name.take(6))}, selected=filterMode==f, modifier=Modifier.weight(1f))
    }
   }
  }
