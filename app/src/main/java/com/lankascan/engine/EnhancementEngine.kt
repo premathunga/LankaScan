@@ -1,7 +1,6 @@
 package com.lankascan.engine
 import android.graphics.*
 import kotlin.math.*
-import kotlin.math.pow
 
 // Priority 4 professional enhancement engine - Adaptive illumination correction + local shadow removal
 // Better than CamPDF v1.5.1 : morphological closing + separable box smoothing + blue ink preservation
