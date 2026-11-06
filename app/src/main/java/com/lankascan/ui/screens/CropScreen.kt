@@ -6,7 +6,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -17,6 +16,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.lankascan.data.ScanSession
+import com.lankascan.engine.DocumentDetector
 import com.lankascan.util.ImageProcessor
 import kotlin.math.roundToInt
 
@@ -24,17 +24,18 @@ import kotlin.math.roundToInt
 @Composable fun CropScreen(onConfirm:(android.graphics.Bitmap)->Unit, onBack:()->Unit){
  val src=ScanSession.lastCaptured ?: return
  var viewSize by remember{mutableStateOf(Offset.Zero)}
- var points by remember{mutableStateOf(ImageProcessor.autoDetectEdges(1000f,1400f).map{PointF(it.x*0.3f, it.y*0.3f)})}
+ var points by remember{mutableStateOf(DocumentDetector.detectDocument(src).map{PointF(it.x*0.25f, it.y*0.25f)})}
  var preview by remember{mutableStateOf(src)}
- var filterMode by remember{mutableStateOf("Original")}
+ var filterMode by remember{mutableStateOf(com.lankascan.engine.EnhancementEngine.Filter.NO_SHADOW)}
+
  Column(Modifier.fillMaxSize().background(Color(0xFF0F1115))){
   Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement=Arrangement.SpaceBetween){
    TextButton(onClick=onBack){Text("Back")}
-   Text("Adjust • OFFLINE", color=Color.White)
+   Text("Adjust • OFFLINE AI", color=Color.White)
    TextButton(onClick={
     val scaled=points.map{PointF(it.x / viewSize.x * src.width, it.y / viewSize.y * src.height)}
     val cropped=ImageProcessor.perspectiveCrop(src, scaled)
-    val finalBmp=when(filterMode){"Magic"->ImageProcessor.magicFilter(cropped); "BW"->ImageProcessor.bwFilter(cropped); else->cropped}
+    val finalBmp=ImageProcessor.applyFilter(cropped, filterMode)
     onConfirm(finalBmp)
    }){Text("Confirm")}
   }
@@ -45,14 +46,15 @@ import kotlin.math.roundToInt
     Box(Modifier.offset{IntOffset((offset.x-20).roundToInt(), (offset.y-20).roundToInt())}.size(40.dp).background(Color(0xFF4ADE80), RoundedCornerShape(20.dp)).pointerInput(idx){detectDragGestures{_,drag->offset+=drag; points=points.toMutableList().also{it[idx]=PointF(offset.x, offset.y)}}})
    }
   }
-  Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement=Arrangement.spacedBy(8.dp)){
-   listOf("Original","Magic","BW").forEach{ mode->
+  Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement=Arrangement.spacedBy(6.dp)){
+   listOf("ORIGINAL","LIGHTEN","ENHANCE","NO_SHADOW","BW").forEach{ name->
+    val f=com.lankascan.engine.EnhancementEngine.Filter.valueOf(name)
     FilterChip(onClick={
-     filterMode=mode
+     filterMode=f
      val scaled=points.map{PointF(it.x / viewSize.x * src.width, it.y / viewSize.y * src.height)}
      val cropped=ImageProcessor.perspectiveCrop(src, scaled)
-     preview=when(mode){"Magic"->ImageProcessor.magicFilter(cropped); "BW"->ImageProcessor.bwFilter(cropped); else->cropped}
-    }, label={Text(mode)}, selected=filterMode==mode, modifier=Modifier.weight(1f))
+     preview=ImageProcessor.applyFilter(cropped, f)
+    }, label={Text(name.take(6))}, selected=filterMode==f, modifier=Modifier.weight(1f))
    }
   }
  }

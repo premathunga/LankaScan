@@ -17,8 +17,7 @@ import java.io.File
  val files=remember{mutableStateOf(listOf<File>())}
  LaunchedEffect(Unit){ if(dir.exists()) files.value=dir.listFiles()?.filter{it.extension=="pdf"}?.sortedByDescending{it.lastModified()}?: emptyList() }
  Column(Modifier.fillMaxSize().background(Color(0xFF0F1115)).padding(16.dp)){
-  Text("LankaScan OFFLINE", style=MaterialTheme.typography.headlineMedium, color=Color.White)
-  Text("100% Offline • No Ads • Better than CamScanner", style=MaterialTheme.typography.labelSmall, color=Color(0xFF4ADE80))
+  Column{ Text("LankaScan Pro", style=MaterialTheme.typography.headlineMedium, color=Color.White); Text("100% OFFLINE • No Ads • Better than Claude's CamPDF", style=MaterialTheme.typography.labelSmall, color=Color(0xFF4ADE80)) }
   Spacer(Modifier.height(16.dp))
   if(files.value.isEmpty()){
    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment=Alignment.Center){ Text("No documents yet. Tap Scan.", color=Color.Gray) }
@@ -26,14 +25,16 @@ import java.io.File
    LazyColumn(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(10.dp)){
     items(files.value){ file->
      Card(shape=RoundedCornerShape(16.dp), colors=CardDefaults.cardColors(containerColor=Color(0xFF1E242E)), modifier=Modifier.fillMaxWidth()){
-      Row(Modifier.padding(14.dp)){ Column{ Text(file.nameWithoutExtension, color=Color.White); Text("${file.length()/1024} kB", color=Color.Gray, style=MaterialTheme.typography.bodySmall) } }
+      Row(Modifier.padding(14.dp)){ Column{ Text(file.nameWithoutExtension, color=Color.White); Text("${file.length()/1024} kB • PDF • A4", color=Color.Gray, style=MaterialTheme.typography.bodySmall) } }
      }
     }
    }
   }
   Spacer(Modifier.height(12.dp))
   Button(onClick=onScan, modifier=Modifier.fillMaxWidth().height(64.dp), shape=RoundedCornerShape(32.dp), colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF4ADE80), contentColor=Color.Black)){
-   Text("Scan Document • OFFLINE")
+   Text("Scan Document • OFFLINE PRO")
   }
+  Spacer(Modifier.height(6.dp))
+  Text("Engine: Blur+Sobel+Contour+Hull+MorphClose+BlueInk • A4 Standardized", color=Color.Gray, style=MaterialTheme.typography.labelSmall)
  }
 }
