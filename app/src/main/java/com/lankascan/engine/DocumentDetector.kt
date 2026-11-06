@@ -5,65 +5,77 @@ import android.graphics.PointF
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.math.max
-
-// Blur + Sobel + Quad Scoring + Shape Plausibility (Claude CamPDF P1 improved)
+// CamPDF Priority 1 + Improved: Gaussian Blur + Sobel + Multi-candidate + Frame Penalty + Shape Score
+// FAST: works on 800px copy, getPixels, no getPixel loop
 object DocumentDetector{
  data class Quad(val points: List<PointF>, val score: Float)
  fun detectDocument(src: Bitmap): List<PointF>{
   val w=src.width; val h=src.height
-  val gray=toGray(src)
-  val blurred=boxBlur(gray, 2)
-  val edges=sobel(blurred)
-  val quads=findQuads(edges, w, h)
+  val scale=800f/max(w,h)
+  val sw=if(scale<1f)(w*scale).toInt() else w
+  val sh=if(scale<1f)(h*scale).toInt() else h
+  val small=if(scale<1f) Bitmap.createScaledBitmap(src, sw, sh, true) else src
+  val gray=toGrayFast(small)
+  val blurred=gaussianBlur(gray, sw, sh)
+  val edges=sobel(blurred, sw, sh)
+  val quads=findQuads(edges, sw, sh)
   val best=quads.maxByOrNull{it.score}
-  return best?.points ?: defaultQuad(w,h)
+  val res=best?.points ?: defaultQuad(sw,sh)
+  val back=w.toFloat()/sw
+  return res.map{PointF(it.x*back, it.y*back)}
  }
- private fun toGray(src: Bitmap): Array<IntArray>{
+ private fun toGrayFast(src: Bitmap): IntArray{
   val w=src.width; val h=src.height
-  val arr=Array(h){IntArray(w)}
-  for(y in 0 until h) for(x in 0 until w){ val c=src.getPixel(x,y); arr[y][x]=(Color.red(c)*0.299 + Color.green(c)*0.587 + Color.blue(c)*0.114).toInt() }
-  return arr
+  val pix=IntArray(w*h); src.getPixels(pix,0,w,0,0,w,h)
+  val gray=IntArray(w*h)
+  for(i in pix.indices){val c=pix[i]; gray[i]=(Color.red(c)*0.299+Color.green(c)*0.587+Color.blue(c)*0.114).toInt()}
+  return gray
  }
- private fun boxBlur(src: Array<IntArray>, r:Int): Array<IntArray>{
-  val h=src.size; val w=src[0].size
-  val out=Array(h){IntArray(w)}
-  for(y in r until h-r) for(x in r until w-r){ var sum=0; for(dy in -r..r) for(dx in -r..r) sum+=src[y+dy][x+dx]; out[y][x]=sum/((2*r+1)*(2*r+1)) }
+ private fun gaussianBlur(src: IntArray, w:Int, h:Int): IntArray{
+  val out=IntArray(w*h)
+  val kernel=intArrayOf(1,2,1,2,4,2,1,2,1)
+  for(y in 1 until h-1) for(x in 1 until w-1){
+   var sum=0; var k=0
+   for(dy in -1..1) for(dx in -1..1){sum+=src[(y+dy)*w+(x+dx)]*kernel[k++]}
+   out[y*w+x]=sum/16
+  }
   return out
  }
- private fun sobel(src: Array<IntArray>): Array<IntArray>{
-  val h=src.size; val w=src[0].size
-  val out=Array(h){IntArray(w)}
-  val gx=arrayOf(intArrayOf(-1,0,1), intArrayOf(-2,0,2), intArrayOf(-1,0,1))
-  val gy=arrayOf(intArrayOf(-1,-2,-1), intArrayOf(0,0,0), intArrayOf(1,2,1))
-  for(y in 1 until h-1) for(x in 1 until w-1){ var sx=0; var sy=0; for(ky in -1..1) for(kx in -1..1){ sx+=src[y+ky][x+kx]*gx[ky+1][kx+1]; sy+=src[y+ky][x+kx]*gy[ky+1][kx+1] }; out[y][x]=minOf(255, sqrt((sx*sx+sy*sy).toDouble()).toInt()) }
+ private fun sobel(src: IntArray, w:Int, h:Int): IntArray{
+  val out=IntArray(w*h)
+  for(y in 1 until h-1) for(x in 1 until w-1){
+   val gx=-src[(y-1)*w+(x-1)]+src[(y-1)*w+(x+1)]-2*src[y*w+(x-1)]+2*src[y*w+(x+1)]-src[(y+1)*w+(x-1)]+src[(y+1)*w+(x+1)]
+   val gy=-src[(y-1)*w+(x-1)]-2*src[(y-1)*w+x]-src[(y-1)*w+(x+1)]+src[(y+1)*w+(x-1)]+2*src[(y+1)*w+x]+src[(y+1)*w+(x+1)]
+   out[y*w+x]=minOf(255, sqrt((gx*gx+gy*gy).toDouble()).toInt())
+  }
   return out
  }
- private fun findQuads(edge: Array<IntArray>, w:Int, h:Int): List<Quad>{
-  val candidates=listOf(
-   listOf(PointF(w*0.08f,h*0.08f), PointF(w*0.92f,h*0.08f), PointF(w*0.92f,h*0.92f), PointF(w*0.08f,h*0.92f)),
-   listOf(PointF(w*0.12f,h*0.10f), PointF(w*0.88f,h*0.12f), PointF(w*0.85f,h*0.90f), PointF(w*0.10f,h*0.88f)),
-   listOf(PointF(w*0.05f,h*0.15f), PointF(w*0.90f,h*0.10f), PointF(w*0.92f,h*0.88f), PointF(w*0.08f,h*0.92f))
+ private fun findQuads(edge: IntArray, w:Int, h:Int): List<Quad>{
+  val cands=listOf(
+   listOf(PointF(w*0.08f,h*0.08f),PointF(w*0.92f,h*0.08f),PointF(w*0.92f,h*0.92f),PointF(w*0.08f,h*0.92f)),
+   listOf(PointF(w*0.12f,h*0.10f),PointF(w*0.88f,h*0.12f),PointF(w*0.85f,h*0.90f),PointF(w*0.10f,h*0.88f)),
+   listOf(PointF(w*0.05f,h*0.15f),PointF(w*0.90f,h*0.10f),PointF(w*0.92f,h*0.88f),PointF(w*0.08f,h*0.92f))
   )
-  return candidates.map{ quad ->
+  return cands.map{quad->
    val area=quadArea(quad)
-   val edgeScore=edgeScoreNearQuad(edge, quad)
-   val shapeScore=shapePlausibility(quad)
-   val framePenalty=quad.count{ it.x<w*0.02f || it.x>w*0.98f || it.y<h*0.02f || it.y>h*0.98f } * 0.15f
-   Quad(quad, edgeScore*0.5f + (area/(w*h))*0.3f + shapeScore*0.2f - framePenalty)
+   val edgeScore=edgeScore(edge,quad,w,h)
+   val shape=shapeScore(quad)
+   val framePenalty=quad.count{it.x<w*0.02f||it.x>w*0.98f||it.y<h*0.02f||it.y>h*0.98f}*0.15f
+   Quad(quad, edgeScore*0.5f+(area/(w*h))*0.3f+shape*0.2f-framePenalty)
   }
  }
- private fun quadArea(pts: List<PointF>): Float{ var a=0f; for(i in pts.indices){ val j=(i+1)%pts.size; a+=pts[i].x*pts[j].y - pts[j].x*pts[i].y }; return abs(a)/2f }
- private fun edgeScoreNearQuad(edge: Array<IntArray>, quad: List<PointF>): Float{
+ private fun quadArea(p:List<PointF>):Float{var a=0f; for(i in p.indices){val j=(i+1)%p.size; a+=p[i].x*p[j].y-p[j].x*p[i].y}; return abs(a)/2f}
+ private fun edgeScore(edge:IntArray, quad:List<PointF>, w:Int, h:Int):Float{
   var sum=0; var cnt=0
-  for(i in quad.indices){ val a=quad[i]; val b=quad[(i+1)%quad.size]; for(s in 0..20){ val x=(a.x + (b.x-a.x)*s/20).toInt().coerceIn(0, edge[0].size-1); val y=(a.y + (b.y-a.y)*s/20).toInt().coerceIn(0, edge.size-1); sum+=edge[y][x]; cnt++ } }
-  return if(cnt==0) 0f else sum.toFloat()/cnt/255f
+  for(i in quad.indices){val a=quad[i]; val b=quad[(i+1)%quad.size]; for(s in 0..20){val x=(a.x+(b.x-a.x)*s/20).toInt().coerceIn(0,w-1); val y=(a.y+(b.y-a.y)*s/20).toInt().coerceIn(0,h-1); sum+=edge[y*w+x]; cnt++}}
+  return if(cnt==0)0f else sum.toFloat()/cnt/255f
  }
- private fun shapePlausibility(quad: List<PointF>): Float{
-  val width=(distance(quad[0],quad[1]) + distance(quad[2],quad[3]))/2f
-  val height=(distance(quad[1],quad[2]) + distance(quad[3],quad[0]))/2f
-  val aspect=height / max(width,1f)
-  return when{ aspect in 1.2f..1.6f -> 1f; aspect in 0.6f..0.9f -> 0.9f; aspect >2f -> 0.8f; aspect in 0.9f..1.1f -> 0.85f; else -> 0.5f }
+ private fun shapeScore(quad:List<PointF>):Float{
+  val width=(dist(quad[0],quad[1])+dist(quad[2],quad[3]))/2f
+  val height=(dist(quad[1],quad[2])+dist(quad[3],quad[0]))/2f
+  val asp=height/max(width,1f)
+  return when{asp in 1.2f..1.6f->1f; asp in 0.6f..0.9f->0.9f; asp>2f->0.8f; asp in 0.9f..1.1f->0.85f; else->0.5f}
  }
- private fun distance(a:PointF,b:PointF):Float{ val dx=a.x-b.x; val dy=a.y-b.y; return sqrt(dx*dx+dy*dy) }
- private fun defaultQuad(w:Int,h:Int):List<PointF>{ return listOf(PointF(w*0.08f,h*0.08f), PointF(w*0.92f,h*0.08f), PointF(w*0.92f,h*0.92f), PointF(w*0.08f,h*0.92f)) }
+ private fun dist(a:PointF,b:PointF):Float{val dx=a.x-b.x; val dy=a.y-b.y; return sqrt(dx*dx+dy*dy)}
+ private fun defaultQuad(w:Int,h:Int):List<PointF>{return listOf(PointF(w*0.08f,h*0.08f),PointF(w*0.92f,h*0.08f),PointF(w*0.92f,h*0.92f),PointF(w*0.08f,h*0.92f))}
 }

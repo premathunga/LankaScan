@@ -11,11 +11,10 @@ object PdfGenerator{
   val doc=PdfDocument()
   bitmaps.forEachIndexed{i,bmp->
    var useBmp=bmp
-   if(quality=="Compact"){ val scale=0.6f; useBmp=Bitmap.createScaledBitmap(bmp, (bmp.width*scale).toInt().coerceAtLeast(200), (bmp.height*scale).toInt().coerceAtLeast(200), true) }
-   else if(quality=="High"){ useBmp=bmp }
+   if(quality=="Compact"){val s=0.6f; useBmp=Bitmap.createScaledBitmap(bmp, (bmp.width*s).toInt().coerceAtLeast(200), (bmp.height*s).toInt().coerceAtLeast(200), true)}
    val aspect=useBmp.height.toFloat()/useBmp.width
-   val pageW=if(aspect in 1.33f..1.5f) 595 else useBmp.width
-   val pageH=if(aspect in 1.33f..1.5f) 842 else useBmp.height
+   val pageW=if(aspect in 1.33f..1.50f) 595 else useBmp.width
+   val pageH=if(aspect in 1.33f..1.50f) 842 else useBmp.height
    val info=PdfDocument.PageInfo.Builder(pageW, pageH, i+1).create()
    val page=doc.startPage(info)
    val scale=minOf(pageW.toFloat()/useBmp.width, pageH.toFloat()/useBmp.height)

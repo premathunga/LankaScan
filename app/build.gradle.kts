@@ -1,7 +1,7 @@
 plugins{id("com.android.application"); id("org.jetbrains.kotlin.android")}
 android{
  namespace="com.lankascan"; compileSdk=34
- defaultConfig{applicationId="com.lankascan"; minSdk=24; targetSdk=34; versionCode=10; versionName="10.0-COMPLETE"}
+ defaultConfig{applicationId="com.lankascan"; minSdk=24; targetSdk=34; versionCode=20; versionName="2.0-CamScanner-Level"}
  buildFeatures{compose=true}
  composeOptions{kotlinCompilerExtensionVersion="1.5.8"}
  buildTypes{release{isMinifyEnabled=false}}
@@ -20,4 +20,5 @@ dependencies{
  implementation("androidx.camera:camera-camera2:1.3.1")
  implementation("androidx.camera:camera-lifecycle:1.3.1")
  implementation("androidx.camera:camera-view:1.3.1")
+ implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }

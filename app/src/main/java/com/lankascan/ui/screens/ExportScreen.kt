@@ -29,15 +29,15 @@ import java.util.*
     OutlinedTextField(value=fileName, onValueChange={fileName=it}, label={Text("File name")}, modifier=Modifier.fillMaxWidth())
     Spacer(Modifier.height(8.dp))
     Text("Quality • A4 Standardized", color=Color.White)
-    Row(horizontalArrangement=Arrangement.spacedBy(8.dp), modifier=Modifier.padding(top=8.dp)){ listOf("High","Balanced","Compact").forEach{ q-> FilterChip(onClick={quality=q}, label={Text(q)}, selected=quality==q) } }
-    Text("Pages: ${ScanSession.pages.size} • Documents/LankaScan/ • Engine: MorphClose+BlueInk", color=Color.Gray, style=MaterialTheme.typography.bodySmall)
+    Row(horizontalArrangement=Arrangement.spacedBy(8.dp), modifier=Modifier.padding(top=8.dp)){listOf("High","Balanced","Compact").forEach{q->FilterChip(onClick={quality=q}, label={Text(q)}, selected=(quality==q))}}
+    Text("Pages: ${ScanSession.pages.size} • Documents/LankaScan/ • Magic Filter Applied", color=Color.Gray, style=MaterialTheme.typography.bodySmall)
     Spacer(Modifier.height(8.dp))
     Text(when(quality){"High"->"Best quality, larger file"; "Compact"->"Small file, 60% compressed"; else->"Balanced quality & size"}, color=Color(0xFF4ADE80), style=MaterialTheme.typography.bodySmall)
    }
   }
   Spacer(Modifier.height(16.dp))
   if(created==null){
-   Button(onClick={ try{ val f=PdfGenerator.createPdf(ScanSession.pages.toList(), fileName, quality); created=f; Toast.makeText(context, "Saved: ${f.name}", Toast.LENGTH_LONG).show() }catch(e:Exception){} }, modifier=Modifier.fillMaxWidth().height(56.dp), shape=RoundedCornerShape(28.dp), colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF4ADE80), contentColor=Color.Black)){Text("Save PDF")}
+   Button(onClick={try{val f=PdfGenerator.createPdf(ScanSession.pages.toList(), fileName, quality); created=f; Toast.makeText(context,"Saved: ${f.name}",Toast.LENGTH_LONG).show()}catch(e:Exception){}}, modifier=Modifier.fillMaxWidth().height(56.dp), shape=RoundedCornerShape(28.dp), colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF4ADE80), contentColor=Color.Black)){Text("Save PDF")}
   } else {
    Text(created!!.absolutePath, color=Color.Gray, style=MaterialTheme.typography.bodySmall)
    Spacer(Modifier.height(12.dp))
